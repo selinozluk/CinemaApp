@@ -64,7 +64,7 @@ public class AuthController : ControllerBase
 
         // 2) Şifre doğrulaması (şemana göre değiştir)
         // Eğer PasswordHash alanın varsa burada doğrula.
-        // Şimdilik demo: şifre kontrolü yapmadan geç (sen burayı kendi hasher'ınla dolduracaksın)
+        // Şimdilik demo: şifre kontrolü yapmadan geç
         // if (!PasswordHasher.Verify(req.Password, user.PasswordHash, user.PasswordSalt)) return Unauthorized(...);
 
         // 3) Token oluştur

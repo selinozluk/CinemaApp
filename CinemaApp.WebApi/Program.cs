@@ -118,8 +118,8 @@ if (app.Environment.IsDevelopment())
 
 /* Pipeline */
 app.UseHttpsRedirection();
-app.UseAuthentication();  // <— ÖNCE
-app.UseAuthorization();   // <— SONRA
+app.UseAuthentication();  
+app.UseAuthorization();   
 
 app.MapControllers();
 
