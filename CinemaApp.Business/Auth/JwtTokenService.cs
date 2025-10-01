@@ -1,8 +1,8 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using CinemaApp.Data.Entities;
 
 namespace CinemaApp.Business.Auth
@@ -16,10 +16,10 @@ namespace CinemaApp.Business.Auth
         {
             var issuer = _cfg["Jwt:Issuer"] ?? "CinemaApp";
             var audience = _cfg["Jwt:Audience"] ?? "CinemaApp.Client";
-            var secret = _cfg["Jwt:SecretKey"] ?? _cfg["Jwt:Key"];
-            if (string.IsNullOrWhiteSpace(secret))
-                throw new InvalidOperationException("JWT SecretKey is missing in configuration.");
+            var secret = _cfg["Jwt:SecretKey"] ?? _cfg["Jwt:Key"]
+                           ?? throw new InvalidOperationException("JWT SecretKey is missing.");
 
+            // Base64 ya da düz string destekle + min 32 byte
             byte[] keyBytes;
             try { keyBytes = Convert.FromBase64String(secret); }
             catch { keyBytes = Encoding.UTF8.GetBytes(secret); }
@@ -30,21 +30,22 @@ namespace CinemaApp.Business.Auth
 
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-                new Claim(ClaimTypes.Name, user.Email ?? string.Empty),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(ClaimTypes.Email, user.Email ?? string.Empty),
+                new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}".Trim()),
+                new(ClaimTypes.Role, user.Role.ToString()), 
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
-            var expireMinutes = int.TryParse(_cfg["Jwt:ExpireMinutes"], out var m) ? m : 60;
+            var minutes = int.TryParse(_cfg["Jwt:ExpireMinutes"], out var m) ? m : 60;
 
             var token = new JwtSecurityToken(
                 issuer: issuer,
                 audience: audience,
                 claims: claims,
                 notBefore: DateTime.UtcNow,
-                expires: DateTime.UtcNow.AddMinutes(expireMinutes),
+                expires: DateTime.UtcNow.AddMinutes(minutes),
                 signingCredentials: creds
             );
 

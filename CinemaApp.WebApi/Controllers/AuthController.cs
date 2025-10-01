@@ -1,12 +1,13 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using CinemaApp.Business.Auth;
 using CinemaApp.Data.Context;
 using CinemaApp.Data.Entities;
 using CinemaApp.WebApi.Filters;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CinemaApp.WebApi.Controllers;
 
@@ -16,63 +17,76 @@ public class AuthController : ControllerBase
 {
     private readonly IJwtTokenService _jwt;
     private readonly IDataProtector _protector;
-    private readonly CinemaDbContext _db; // DB erişimi
+    private readonly CinemaDbContext _db;
+    private readonly IPasswordHasher<UserEntity> _hasher;
 
-    public AuthController(IJwtTokenService jwt, IDataProtectionProvider dp, CinemaDbContext db)
+    public AuthController(
+        IJwtTokenService jwt,
+        IDataProtectionProvider dp,
+        CinemaDbContext db,
+        IPasswordHasher<UserEntity> hasher)
     {
         _jwt = jwt;
         _protector = dp.CreateProtector("CinemaApp.AuthController");
         _db = db;
+        _hasher = hasher;
     }
 
-    // REGISTER (örnek/iskelet)
+    public record RegisterRequest(
+        [Required, EmailAddress] string Email,
+        [Required, MinLength(6)] string Password,
+        [Required] string FirstName,
+        [Required] string LastName,
+        UserRole Role = UserRole.Customer
+    );
+
+    public record LoginRequest(
+        [Required, EmailAddress] string Email,
+        [Required] string Password
+    );
+
+    public record AuthResponse(string Token, string Email, string Role);
+
     [HttpPost("register")]
     [AllowAnonymous]
     [ServiceFilter(typeof(ValidationFilterAttribute))]
     public async Task<IActionResult> Register([FromBody] RegisterRequest req, CancellationToken ct)
     {
-        // TODO: kendi UserEntity şemanı kullan
-        // Örn: Email benzersiz kontrolü
-        var exists = await _db.Set<UserEntity>()
-                              .AnyAsync(u => u.Email == req.Email, ct);
-        if (exists) return Conflict(new { message = "Email already exists." });
+        if (await _db.Users.AnyAsync(u => u.Email == req.Email, ct))
+            return Conflict(new { message = "Email already exists." });
 
         var user = new UserEntity
         {
-            Email = req.Email!.Trim()
-            // PasswordHash/Salt alanların varsa burada ata
+            Email = req.Email.Trim(),
+            FirstName = req.FirstName.Trim(),
+            LastName = req.LastName.Trim(),
+            Role = req.Role
         };
+        user.PasswordHash = _hasher.HashPassword(user, req.Password);
 
-        _db.Add(user);
+        _db.Users.Add(user);
         await _db.SaveChangesAsync(ct);
 
-        return Created(string.Empty, new { message = "User registered." });
+        var token = _jwt.CreateToken(user);
+        return Created(string.Empty, new AuthResponse(token, user.Email, user.Role.ToString()));
     }
 
-    // LOGIN (JWT üretimi) – DB kontrolünü burada yap
     [HttpPost("login")]
     [AllowAnonymous]
     [ServiceFilter(typeof(ValidationFilterAttribute))]
     public async Task<IActionResult> Login([FromBody] LoginRequest req, CancellationToken ct)
     {
-        // 1) Kullanıcıyı getir
-        var user = await _db.Set<UserEntity>()
-                            .FirstOrDefaultAsync(u => u.Email == req.Email, ct);
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == req.Email, ct);
+        if (user is null) return Unauthorized(new { message = "Invalid credentials." });
 
-        if (user is null)
+        var vr = _hasher.VerifyHashedPassword(user, user.PasswordHash, req.Password);
+        if (vr == PasswordVerificationResult.Failed)
             return Unauthorized(new { message = "Invalid credentials." });
 
-        // 2) Şifre doğrulaması (şemana göre değiştir)
-        // Eğer PasswordHash alanın varsa burada doğrula.
-        // Şimdilik demo: şifre kontrolü yapmadan geç
-        // if (!PasswordHasher.Verify(req.Password, user.PasswordHash, user.PasswordSalt)) return Unauthorized(...);
-
-        // 3) Token oluştur
         var token = _jwt.CreateToken(user);
-        return Ok(new { access_token = token });
+        return Ok(new AuthResponse(token, user.Email, user.Role.ToString()));
     }
 
-    // Korumalı örnek
     [HttpGet("protect-demo")]
     [Authorize]
     public IActionResult ProtectDemo([FromQuery] string value)
@@ -81,16 +95,4 @@ public class AuthController : ControllerBase
         var plain = _protector.Unprotect(cipher);
         return Ok(new { cipher, plain });
     }
-}
-
-public class RegisterRequest
-{
-    [Required, EmailAddress] public string Email { get; set; } = default!;
-    [Required, MinLength(6)] public string Password { get; set; } = default!;
-}
-
-public class LoginRequest
-{
-    [Required, EmailAddress] public string Email { get; set; } = default!;
-    [Required] public string Password { get; set; } = default!;
 }

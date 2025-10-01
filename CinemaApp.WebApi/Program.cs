@@ -2,22 +2,18 @@ using System;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
+using CinemaApp.Data.Entities;
 using CinemaApp.Data.Context;
 using CinemaApp.Data.Repositories;
 using CinemaApp.Data.UnitOfWork;
 using CinemaApp.Business.Auth;
 using CinemaApp.WebApi.Filters;
 using CinemaApp.WebApi.Middleware;
-
-// Uygulamanýn baþladýðý dosya
-// Burada servisler tanýmlanýr, middleware sýrasý ayarlanýr
-// DbContext burada eklenir ve veritabaný baðlantýsý saðlanýr
-// JWT Authentication ve Authorization ayarlarý da burada yapýlýr
-
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,7 +55,7 @@ var cs = builder.Configuration.GetConnectionString("Default");
 builder.Services.AddDbContext<CinemaDbContext>(opt =>
     opt.UseSqlServer(cs, b => b.MigrationsAssembly("CinemaApp.Data")));
 
-/* DI – Repository & UnitOfWork (kullanýyorsan) */
+/* DI – Repository & UnitOfWork */
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
@@ -103,6 +99,7 @@ builder.Services.AddAuthorization();
 
 /* Business servisleri */
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IPasswordHasher<UserEntity>, PasswordHasher<UserEntity>>(); // <<< eklendi
 
 var app = builder.Build();
 
@@ -118,8 +115,8 @@ if (app.Environment.IsDevelopment())
 
 /* Pipeline */
 app.UseHttpsRedirection();
-app.UseAuthentication();  
-app.UseAuthorization();   
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
