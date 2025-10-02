@@ -176,3 +176,35 @@ public class MoviesController : ControllerBase
         return NoContent();
     }
 }
+
+// ===================== MOVIES =====================
+// GET /api/Movies
+// Amaç: Tüm filmleri listele (query ile filtrelenebilirse parametre verilir).
+
+// POST /api/Movies
+// Amaç: Yeni film ekle.
+// Body (JSON – örnek minimal):
+// {
+//   "title": "Inception",
+//   "year": 2010,
+//   "description": "Dream within a dream.",
+//   "rating": 8.8
+// }
+
+
+// PUT /api/Movies/{id}
+// Amaç: Filmi tamamen güncelle.
+// Body (JSON):
+// {
+//   "id": 1,
+//   "title": "Inception",
+//   "year": 2010,
+//   "description": "Nolan classic.",
+//   "rating": 9.0
+// }
+
+// PATCH /api/Movies/{id}
+// Amaç: Filmi kısmi güncelle.
+// Body (JSON – örn. sadece rating):
+// [ { "op": "replace", "path": "/Title", "value": "Inception" } ]
+

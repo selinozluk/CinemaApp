@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 
 namespace CinemaApp.Data.Repositories;
 
+// EF Core için generic repository. Tek bir sınıfla tüm entity’ler (T : BaseEntity) için temel CRUD işlerini yapar. 
 public class Repository<T> : IRepository<T> where T : BaseEntity
 {
     private readonly CinemaDbContext _db;

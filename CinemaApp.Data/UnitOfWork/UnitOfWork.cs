@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CinemaApp.Data.UnitOfWork;
 
+// Bir iş sırasında yapılan tüm DB değişikliklerini tek paket halinde yönetir
 public class UnitOfWork : IUnitOfWork
 {
     private readonly CinemaDbContext _db;

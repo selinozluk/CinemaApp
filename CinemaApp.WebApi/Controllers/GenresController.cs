@@ -89,3 +89,34 @@ public class GenresController : ControllerBase
         return NoContent();
     }
 }
+// ===================== GENRES =====================
+// GET /api/Genres
+// Amaç: Tüm türleri listele (public veya token'a bağlı).
+
+// POST /api/Genres
+// Amaç: Yeni tür ekle (genellikle admin/token ister).
+// Body (JSON):
+// {
+//   "name": "Action"
+// }
+
+// GET /api/Genres/{id}
+// Amaç: Id'ye göre tür detayını getir.
+
+
+// PUT /api/Genres/{id}
+// Amaç: Türü tamamen güncelle (tam nesne gönder).
+// Body (JSON):
+// {
+//   "id": 1,
+//   "name": "Action & Adventure"
+// }
+
+// PATCH /api/Genres/{id}
+// Amaç: Türü kısmi güncelle (yalnızca değişen alanlar).
+// Body (JSON – örn. sadece isim):
+// [{ "op": "replace", "path": "/name", "value": "Action" } ]
+
+// DELETE /api/Genres/{id}
+// Amaç: Türü sil (genelde admin/token ister).
+

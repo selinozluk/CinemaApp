@@ -3,12 +3,12 @@ using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace CinemaApp.WebApi.Filters;
 
-public class ValidationFilterAttribute : ActionFilterAttribute
+public class ValidationFilterAttribute : ActionFilterAttribute // ActionFilter tabanlı model doğrulama filtresi
 {
     // action filter – model validation
     public override void OnActionExecuting(ActionExecutingContext context)
     {
-        if (!context.ModelState.IsValid)
+        if (!context.ModelState.IsValid) 
         {
             var problem = new ValidationProblemDetails(context.ModelState)
             {
