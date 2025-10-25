@@ -48,29 +48,3 @@
 ```bash
 git clone https://github.com/selinozluk/CinemaApp.git
 cd CinemaApp
-
----
-
-## Proje Hakkında Daha Fazla Detay
-
-### 1) Alan Modeli (Özet Şema)
-| Entity      | Önemli Alanlar                           | Notlar |
-|-------------|------------------------------------------|-------|
-| **Movie**   | `Id`, `Title` (req, max 100), `Year` (1900-2100), `Description` (max 1000), `Rating` (0-10) | `MovieGenres` ile N–N |
-| **Genre**   | `Id`, `Name` (req, unique, max 50)       | İsim benzersiz doğrulaması |
-| **MovieGenre** | `MovieId`, `GenreId`                 | Bileşik PK, köprü tablo |
-| **User**    | `Id`, `Email` (unique), `PasswordHash`, `Role` (`Admin`, `Writer`, `Reader`) | JWT üretimi için temel alanlar |
-
-> **İlişkiler:** Movie ⟷ Genre = **N–N** (MovieGenre).  
-> **Doğrulamalar:** Data Annotations + ek `Fluent` kontroller servis katmanında.
-
----
-
-### 2) DTO & Mapping (örnek)
-İstek/yanıt ayırımı için DTO’lar kullanılır; entity sızıntısı yoktur.
-
-```csharp
-public record MovieCreateDto(string Title, int Year, string? Description, double? Rating, IEnumerable<int>? GenreIds);
-public record MovieDetailDto(int Id, string Title, int Year, string? Description, double? Rating, IEnumerable<GenreDto> Genres);
-public record GenreDto(int Id, string Name);
-
